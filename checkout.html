@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout - EventTick</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .seat {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            margin: 5px;
+            background-color: #28a745;
+            color: white;
+            text-align: center;
+            line-height: 30px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .seat.selected {
+            background-color: #007bff;
+        }
+        .seat.occupied {
+            background-color: #dc3545;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="home.html">EventTick</a>
+        </div>
+    </nav>
+
+    <main class="container py-5">
+        <div class="row">
+            <div class="col-md-8">
+                <h2 class="mb-4">Completa tu compra</h2>
+                
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h4 id="event-title"></h4>
+                        <p><strong>Fecha:</strong> <span id="event-date"></span></p>
+                        <p><strong>Lugar:</strong> <span id="event-location"></span></p>
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h4 class="mb-3">Selecciona la fecha</h4>
+                        <select class="form-select" id="event-date-select">
+                            <!-- Las fechas se cargarán dinámicamente -->
+                        </select>
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h4 class="mb-3">Selecciona la zona</h4>
+                        <select class="form-select" id="zone-select">
+                            <!-- Las zonas se cargarán dinámicamente -->
+                        </select>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <h4 class="mb-3">Selecciona tus asientos</h4>
+                        <div class="mb-3">
+                            <label class="form-label">Fila:</label>
+                            <select class="form-select" id="row-select">
+                                <option value="1">Fila 1</option>
+                                <option value="2">Fila 2</option>
+                                <option value="3">Fila 3</option>
+                                <option value="4">Fila 4</option>
+                                <option value="5">Fila 5</option>
+                            </select>
+                        </div>
+
+                        <div class="seat-map p-3 mb-3 bg-light rounded">
+                            <h5>Selecciona tus asientos</h5>
+                            <div id="seat-map" class="mt-3"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card sticky-top" style="top: 20px;">
+                    <div class="card-body">
+                        <h4 class="card-title mb-3">Resumen</h4>
+                        <div id="order-summary">
+                            <p>Selecciona tus preferencias para ver el resumen</p>
+                        </div>
+                        <button id="complete-purchase" class="btn btn-primary w-100 mt-3 py-2" disabled>Pagar y Generar Boleto</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const user = JSON.parse(localStorage.getItem('currentUser'));
+            if (!user) {
+                window.location.href = 'index.html';
+                return;
+            }
+            
+            // Obtener el ID del evento de la URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const eventId = parseInt(urlParams.get('eventId'));
+            
+            // Datos de ejemplo mejorados
+            const events = [
+                {
+                    id: 1,
+                    title: "Concierto de Rock",
+                    description: "El mejor concierto de rock con bandas internacionales",
+                    date: "2025-12-15T20:00:00",
+                    location: "Estadio Nacional",
+                    imageUrl: "https://via.placeholder.com/800x400?text=Concierto+Rock",
+                    zones: [
+                        { name: "General", price: 50 },
+                        { name: "VIP", price: 120 }
+                    ],
+                    dates: [
+                        { date: "2025-12-15", time: "20:00" },
+                        { date: "2025-12-16", time: "20:00" }
+                    ]
+                },
+                {
+                    id: 2,
+                    title: "Festival de Cine",
+                    description: "Proyección de las mejores películas del año",
+                    date: "2025-11-20T18:00:00",
+                    location: "Centro Cultural",
+                    imageUrl: "https://via.placeholder.com/800x400?text=Festival+Cine",
+                    zones: [
+                        { name: "General", price: 25 },
+                        { name: "Palco", price: 60 }
+                    ],
+                    dates: [
+                        { date: "2025-11-20", time: "18:00" },
+                        { date: "2025-11-21", time: "18:00" }
+                    ]
+                }
+            ];
+            
+            const event = events.find(e => e.id === eventId);
+            
+            if (!event) {
+                window.location.href = 'events.html';
+                return;
+            }
+            
+            // Mostrar información del evento
+            document.getElementById('event-title').textContent = event.title;
+            document.getElementById('event-location').textContent = event.location;
+            
+            const eventDate = new Date(event.date);
+            document.getElementById('event-date').textContent = eventDate.toLocaleDateString('es-ES', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            
+            // Cargar fechas disponibles
+            const dateSelect = document.getElementById('event-date-select');
+            event.dates.forEach(date => {
+                const option = document.createElement('option');
+                option.value = date.date;
+                option.textContent = `${new Date(date.date).toLocaleDateString('es-ES')} - ${date.time}`;
+                dateSelect.appendChild(option);
+            });
+            
+            // Cargar zonas disponibles
+            const zoneSelect = document.getElementById('zone-select');
+            event.zones.forEach(zone => {
+                const option = document.createElement('option');
+                option.value = zone.name;
+                option.textContent = `${zone.name} - $${zone.price.toFixed(2)}`;
+                zoneSelect.appendChild(option);
+            });
+            
+            // Generar asientos
+            const seatMap = document.getElementById('seat-map');
+            const seatsPerRow = 10;
+            
+            for (let seat = 1; seat <= seatsPerRow; seat++) {
+                const seatElement = document.createElement('span');
+                seatElement.className = 'seat';
+                seatElement.textContent = seat;
+                seatElement.dataset.seat = seat;
+                
+                // Marcar algunos asientos como ocupados aleatoriamente
+                if (Math.random() < 0.3) {
+                    seatElement.classList.add('occupied');
+                } else {
+                    seatElement.addEventListener('click', function() {
+                        this.classList.toggle('selected');
+                        updateOrderSummary();
+                    });
+                }
+                
+                seatMap.appendChild(seatElement);
+            }
+            
+            // Actualizar resumen al cambiar opciones
+            document.getElementById('zone-select').addEventListener('change', updateOrderSummary);
+            document.getElementById('row-select').addEventListener('change', updateOrderSummary);
+            document.getElementById('event-date-select').addEventListener('change', updateOrderSummary);
+            
+            function updateOrderSummary() {
+                const selectedZone = document.getElementById('zone-select').value;
+                const selectedRow = document.getElementById('row-select').value;
+                const selectedDate = document.getElementById('event-date-select').value;
+                const selectedSeats = document.querySelectorAll('.seat.selected');
+                
+                const summary = document.getElementById('order-summary');
+                const completeBtn = document.getElementById('complete-purchase');
+                
+                if (selectedSeats.length === 0) {
+                    summary.innerHTML = '<p>Selecciona al menos un asiento</p>';
+                    completeBtn.disabled = true;
+                    return;
+                }
+                
+                const zone = event.zones.find(z => z.name === selectedZone);
+                const total = selectedSeats.length * zone.price;
+                
+                let seatsText = '';
+                selectedSeats.forEach(seat => {
+                    seatsText += `Asiento ${seat.textContent}<br>`;
+                });
+                
+                const dateOption = event.dates.find(d => d.date === selectedDate);
+                const formattedDate = new Date(selectedDate).toLocaleDateString('es-ES', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+                
+                summary.innerHTML = `
+                    <h5>Resumen de Compra</h5>
+                    <p><strong>Evento:</strong> ${event.title}</p>
+                    <p><strong>Fecha:</strong> ${formattedDate} - ${dateOption.time}</p>
+                    <p><strong>Zona:</strong> ${selectedZone} - $${zone.price.toFixed(2)} c/u</p>
+                    <p><strong>Fila:</strong> ${selectedRow}</p>
+                    <p><strong>Asientos:</strong><br>${seatsText}</p>
+                    <p><strong>Cantidad:</strong> ${selectedSeats.length}</p>
+                    <hr>
+                    <h5>Total: $${total.toFixed(2)}</h5>
+                `;
+                
+                completeBtn.disabled = false;
+            }
+            
+            // Completar compra
+            document.getElementById('complete-purchase').addEventListener('click', function() {
+                const selectedZone = document.getElementById('zone-select').value;
+                const selectedRow = document.getElementById('row-select').value;
+                const selectedDate = document.getElementById('event-date-select').value;
+                const selectedSeats = document.querySelectorAll('.seat.selected');
+                
+                const zone = event.zones.find(z => z.name === selectedZone);
+                const dateOption = event.dates.find(d => d.date === selectedDate);
+                
+                // Guardar datos del ticket
+                const ticket = {
+                    event: event.title,
+                    date: selectedDate,
+                    time: dateOption.time,
+                    zone: selectedZone,
+                    row: selectedRow,
+                    seats: Array.from(selectedSeats).map(s => s.textContent),
+                    price: zone.price,
+                    total: selectedSeats.length * zone.price,
+                    user: user.name,
+                    orderId: 'TICK-' + Math.floor(100000 + Math.random() * 900000),
+                    qrData: `EVENT:${event.title}|DATE:${selectedDate}|SEATS:${Array.from(selectedSeats).map(s => `${selectedRow}-${s.textContent}`).join(',')}`
+                };
+                
+                localStorage.setItem('currentTicket', JSON.stringify(ticket));
+                window.location.href = 'ticket.html';
+            });
+        });
+    </script>
+</body>
+</html>
