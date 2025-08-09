@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Checkout - EventTick</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <link rel="stylesheet" href="../css/style.css"/>
+    <style>
+        .seat {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            margin: 5px;
+            cursor: pointer;
+            position: relative;
+            vertical-align: middle;
+        }
+        .seat svg {
+            width: 100%;
+            height: 100%;
+            fill: #28a745; /* Verde por defecto - disponible */
+            transition: fill 0.3s;
+        }
+        .seat.selected svg {
+            fill: #007bff; /* Azul para seleccionado */
+        }
+        .seat.occupied svg {
+            fill: #dc3545; /* Rojo para ocupado */
+            cursor: not-allowed;
+        }
+        /* Leyenda debajo del mapa de asientos */
+        .seat-legend {
+            margin-top: 20px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            font-size: 14px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .legend-icon {
+            width: 20px;
+            height: 20px;
+            display: inline-block;
+            border-radius: 3px;
+        }
+        .legend-available {
+            background-color: #28a745;
+        }
+        .legend-selected {
+            background-color: #007bff;
+        }
+        .legend-occupied {
+            background-color: #dc3545;
+        }
+        /* Mantener estilos de pago y otros intactos */
+        .payment-method { border: 1px solid #dee2e6; border-radius: 5px; padding: 15px; margin-bottom: 15px; cursor: pointer; }
+        .payment-method.active { border-color: #0d6efd; background-color: #f8f9fa; }
+        .payment-details { margin-top: 15px; padding: 15px; background-color: #f8f9fa; border-radius: 5px; }
+        .event-images img { width: 100%; max-width: 400px; height: auto; border-radius: 6px; object-fit: cover; }
+    </style>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container">
+        <a class="navbar-brand" href="home.html">EventTick</a>
+    </div>
+</nav>
+
+<main class="container py-5">
+    <div class="row">
+        <div class="col-md-8">
+            <h2 class="mb-4">Completa tu compra</h2>
+
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h4 id="event-title"></h4>
+                    <p><strong>Fecha:</strong> <span id="event-date"></span></p>
+                    <p><strong>Lugar:</strong> <span id="event-location"></span></p>
+                    <div class="event-images mb-3">
+                        <img id="event-image" src="../img/default.jpg" alt="Imagen del evento" onerror="this.src='../img/default.jpg';" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4 d-none" id="card-fecha">
+                <div class="card-body">
+                    <h4 class="mb-3">Selecciona la fecha</h4>
+                    <select class="form-select" id="event-date-select"></select>
+                </div>
+            </div>
+
+            <div class="card mb-4 d-none" id="card-zona">
+                <div class="card-body">
+                    <h4 class="mb-3">Selecciona la zona</h4>
+                    <select class="form-select" id="zone-select"></select>
+                </div>
+            </div>
+
+            <div class="card d-none" id="card-asientos">
+                <div class="card-body">
+                    <h4 class="mb-3">Selecciona tus asientos</h4>
+                    <div class="mb-3">
+                        <label class="form-label">Fila:</label>
+                        <select class="form-select" id="row-select"></select>
+                    </div>
+                    <div class="seat-map p-3 mb-3 bg-light rounded">
+                        <h5>Selecciona tus asientos</h5>
+                        <div id="seat-map" class="mt-3"></div>
+                        <!-- Leyenda de colores -->
+                        <div class="seat-legend">
+                            <div class="legend-item">
+                                <span class="legend-icon legend-available"></span> Disponible
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-icon legend-selected"></span> Seleccionado
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-icon legend-occupied"></span> No disponible
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card sticky-top" style="top: 20px;">
+                <div class="card-body">
+                    <h4 class="card-title mb-3">Resumen</h4>
+                    <div id="order-summary">
+                        <p>Selecciona tus preferencias para ver el resumen</p>
+                    </div>
+
+                    <div id="no-zonas-action" class="mt-2" style="display:none;">
+                        <a href="events.html" class="btn btn-secondary w-100">Volver a eventos</a>
+                    </div>
+
+                    <div class="card mt-3">
+                        <div class="card-body">
+                            <h4 class="mb-3">Método de Pago</h4>
+                            <div class="payment-methods">
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="radio" name="paymentMethod" id="paypalMethod" value="paypal" checked>
+                                    <label class="form-check-label" for="paypalMethod">
+                                        <img src="https://www.paypalobjects.com/webstatic/mktg/logo/pp_cc_mark_37x23.jpg" alt="PayPal" style="height: 23px; margin-left: 10px;">
+                                    </label>
+                                </div>
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="radio" name="paymentMethod" id="transferMethod" value="transfer">
+                                    <label class="form-check-label" for="transferMethod">Transferencia Bancaria</label>
+                                    <div id="transferDetails" class="mt-2" style="display: none;">
+                                        <p>Banco: EventTick Bank</p>
+                                        <p>Número de cuenta: ES12 3456 7890 1234 5678 9012</p>
+                                        <p>Titular: EventTick SL</p>
+                                        <p>Concepto: Orden #<span id="order-number-preview"></span></p>
+                                    </div>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="paymentMethod" id="cardMethod" value="card">
+                                    <label class="form-check-label" for="cardMethod">Tarjeta de Crédito/Débito</label>
+                                    <div id="cardDetails" class="mt-3" style="display: none;">
+                                        <div class="mb-3">
+                                            <label for="cardNumber" class="form-label">Número de Tarjeta</label>
+                                            <input type="text" class="form-control" id="cardNumber" placeholder="1234 5678 9012 3456">
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label for="cardExpiry" class="form-label">Fecha de Expiración</label>
+                                                <input type="text" class="form-control" id="cardExpiry" placeholder="MM/AA">
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label for="cardCvv" class="form-label">CVV</label>
+                                                <input type="text" class="form-control" id="cardCvv" placeholder="123">
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="cardName" class="form-label">Nombre en la Tarjeta</label>
+                                            <input type="text" class="form-control" id="cardName" placeholder="Nombre Apellido">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button id="complete-purchase" class="btn btn-primary w-100 mt-3 py-2" disabled>Procesar compra</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async function() {
+    const user = JSON.parse(localStorage.getItem('currentUser'));
+    if (!user) {
+        window.location.href = 'index.html';
+        return;
+    }
+
+    const eventId = parseInt(new URLSearchParams(window.location.search).get('eventId'), 10);
+    if (!eventId) {
+        window.location.href = 'events.html';
+        return;
+    }
+
+    let evento = null;
+    let zonas = [];
+
+    async function safeFetch(url, options = {}) {
+        try {
+            const resp = await fetch(url, options);
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            return await resp.json();
+        } catch (err) {
+            console.error("Fetch falló:", url, err);
+            throw err;
+        }
+    }
+
+    try {
+        const json = await safeFetch(`../controllers/clienteCheckout.php?action=getEventDetails&eventId=${encodeURIComponent(eventId)}`);
+        if (json.Codigo !== '01') {
+            alert(json.Mensaje || 'No se pudo cargar el evento');
+            window.location.href = 'events.html';
+            return;
+        }
+        evento = json.Evento;
+        zonas = Array.isArray(json.Zonas) ? json.Zonas : [];
+        setupUI(evento, zonas);
+    } catch (e) {
+        alert('Error al cargar el evento. Revisa la consola.');
+        return;
+    }
+
+    function setupUI(eventoObj, zonasArr) {
+        // Imagen según categoría/tipo
+        const imgEl = document.getElementById('event-image');
+        if (eventoObj.categoria?.toLowerCase() === 'teatro' || eventoObj.tipo_evento?.toLowerCase().includes('teatro')) {
+            imgEl.src = '../img/teatro.jpg';
+        } else if (eventoObj.categoria?.toLowerCase() === 'concierto' || eventoObj.tipo_evento?.toLowerCase().includes('concierto')) {
+            imgEl.src = '../img/musica.jpg';
+        } else {
+            imgEl.src = '../img/default.jpg';
+        }
+
+        // Mostrar datos del evento
+        document.getElementById('event-title').textContent = eventoObj.tipo_evento;
+        document.getElementById('event-location').textContent = eventoObj.lugar;
+        const fechaObj = new Date(`${eventoObj.fecha}T${eventoObj.hora}`);
+        document.getElementById('event-date').textContent = fechaObj.toLocaleDateString('es-ES', {
+            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+            hour: '2-digit', minute: '2-digit'
+        });
+
+        document.getElementById('card-fecha').classList.add('d-none');
+
+        const zoneSelect = document.getElementById('zone-select');
+        zoneSelect.innerHTML = '';
+
+        if (!Array.isArray(zonasArr) || zonasArr.length === 0) {
+            document.getElementById('card-zona').classList.remove('d-none');
+            zoneSelect.innerHTML = '<option value="">(No hay zonas disponibles)</option>';
+            document.getElementById('card-asientos').classList.add('d-none');
+            document.getElementById('order-summary').innerHTML = '<p>No hay zonas ni asientos disponibles para este evento.</p>';
+            document.getElementById('complete-purchase').disabled = true;
+            document.getElementById('no-zonas-action').style.display = 'block';
+            return;
+        }
+
+        zonasArr.forEach(z => {
+            const opt = document.createElement('option');
+            opt.value = z.id_zona;
+            opt.textContent = `${z.nombre_zona} - $${parseFloat(z.precio).toFixed(2)}`;
+            zoneSelect.appendChild(opt);
+        });
+        document.getElementById('card-zona').classList.remove('d-none');
+
+        const rowSelect = document.getElementById('row-select');
+
+        function cargarFilasParaZona(id_zona) {
+            rowSelect.innerHTML = '';
+            const zona = zonasArr.find(z => z.id_zona == id_zona);
+            if (!zona) return;
+
+            if (!Array.isArray(zona.filas) || zona.filas.length === 0) {
+                rowSelect.innerHTML = '<option value="">(No hay filas)</option>';
+                document.getElementById('card-asientos').classList.add('d-none');
+                document.getElementById('order-summary').innerHTML = '<p>No hay asientos en esta zona.</p>';
+                document.getElementById('complete-purchase').disabled = true;
+                return;
+            }
+
+            zona.filas.forEach(f => {
+                const o = document.createElement('option');
+                o.value = f.id_fila;
+                o.textContent = `Fila ${f.nombre_fila}`;
+                rowSelect.appendChild(o);
+            });
+            document.getElementById('card-asientos').classList.remove('d-none');
+            cargarMapaAsientos();
+            updateOrderSummary();
+        }
+
+        zoneSelect.addEventListener('change', function() {
+            cargarFilasParaZona(this.value);
+        });
+
+        rowSelect.addEventListener('change', function() {
+            cargarMapaAsientos();
+            updateOrderSummary();
+        });
+
+        function crearIconoAsiento() {
+            // Ícono SVG de asiento simple
+            return `
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+                    <rect x="6" y="7" width="12" height="10" rx="2" ry="2"/>
+                    <rect x="9" y="17" width="6" height="2" rx="1" ry="1"/>
+                </svg>
+            `;
+        }
+
+        function cargarMapaAsientos() {
+            const seatMap = document.getElementById('seat-map');
+            seatMap.innerHTML = '';
+            const zonaSeleccionada = zonasArr.find(z => z.id_zona == zoneSelect.value);
+            if (!zonaSeleccionada) return;
+            const filaSeleccionada = zonaSeleccionada.filas?.find(f => f.id_fila == rowSelect.value);
+            if (!filaSeleccionada) {
+                seatMap.innerHTML = '<p>No hay asientos en esta fila.</p>';
+                document.getElementById('complete-purchase').disabled = true;
+                return;
+            }
+
+            if (!Array.isArray(filaSeleccionada.asientos) || filaSeleccionada.asientos.length === 0) {
+                seatMap.innerHTML = '<p>No hay asientos en esta fila.</p>';
+                document.getElementById('complete-purchase').disabled = true;
+                return;
+            }
+
+            filaSeleccionada.asientos.forEach(a => {
+                const span = document.createElement('span');
+                span.className = 'seat';
+                span.dataset.idAsiento = a.id_asiento;
+                span.title = `Asiento ${a.numero_asiento}`;
+
+                // Insertar el SVG como innerHTML
+                span.innerHTML = crearIconoAsiento();
+
+                if (a.disponibilidad !== 'libre') {
+                    span.classList.add('occupied');
+                } else {
+                    span.addEventListener('click', function() {
+                        if (this.classList.contains('occupied')) return;
+                        this.classList.toggle('selected');
+                        updateOrderSummary();
+                    });
+                }
+                seatMap.appendChild(span);
+            });
+        }
+
+        function updateOrderSummary() {
+            const selectedZoneId = document.getElementById('zone-select').value;
+            const selectedRowText = document.getElementById('row-select').selectedOptions[0]?.textContent || '';
+            const selectedSeats = document.querySelectorAll('.seat.selected');
+            const summary = document.getElementById('order-summary');
+            const completeBtn = document.getElementById('complete-purchase');
+
+            if (selectedSeats.length === 0) {
+                summary.innerHTML = '<p>Selecciona al menos un asiento</p>';
+                completeBtn.disabled = true;
+                return;
+            }
+
+            const zona = zonasArr.find(z => z.id_zona == selectedZoneId);
+            if (!zona) return;
+            const precio = parseFloat(zona.precio);
+            const total = selectedSeats.length * precio;
+
+            let seatsText = '';
+            selectedSeats.forEach(seat => {
+                seatsText += `Asiento ${seat.title.replace('Asiento ', '')}<br>`;
+            });
+
+            summary.innerHTML = `
+                <h5>Resumen de Compra</h5>
+                <p><strong>Evento:</strong> ${eventoObj.tipo_evento}</p>
+                <p><strong>Zona:</strong> ${zona.nombre_zona} - $${precio.toFixed(2)} c/u</p>
+                <p><strong>Fila:</strong> ${selectedRowText}</p>
+                <p><strong>Asientos:</strong><br>${seatsText}</p>
+                <p><strong>Cantidad:</strong> ${selectedSeats.length}</p>
+                <hr>
+                <h5>Total: $${total.toFixed(2)}</h5>
+            `;
+            completeBtn.disabled = false;
+        }
+
+        if (zonasArr.length > 0) {
+            zoneSelect.value = zonasArr[0].id_zona;
+            cargarFilasParaZona(zonasArr[0].id_zona);
+        }
+    }
+
+    // UI de pago
+    document.querySelectorAll('input[name="paymentMethod"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            document.getElementById('transferDetails').style.display = this.value === 'transfer' ? 'block' : 'none';
+            document.getElementById('cardDetails').style.display = this.value === 'card' ? 'block' : 'none';
+            if (this.value === 'transfer') {
+                document.getElementById('order-number-preview').textContent =
+                    'TICK-' + Math.floor(100000 + Math.random() * 900000);
+            }
+        });
+    });
+
+    // Validación inputs tarjeta
+    document.getElementById('cardNumber').addEventListener('input', function() {
+        this.value = this.value.replace(/\s/g, '').replace(/(\d{4})/g, '$1 ').trim();
+    });
+    document.getElementById('cardExpiry').addEventListener('input', function() {
+        this.value = this.value.replace(/\D/g, '').replace(/(\d{2})(\d)/, '$1/$2');
+    });
+    document.getElementById('cardCvv').addEventListener('input', function() {
+        this.value = this.value.replace(/\D/g, '').substring(0, 4);
+    });
+
+    // Comprar boletos
+    document.getElementById('complete-purchase').addEventListener('click', comprarBoletos);
+
+    async function comprarBoletos() {
+        try {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            if (!currentUser) {
+                alert('Debes iniciar sesión primero.');
+                window.location.href = 'index.html';
+                return;
+            }
+            const id_usuario = currentUser.id_usuario || 1;
+            const eventId = parseInt(new URLSearchParams(window.location.search).get('eventId'), 10);
+            if (!eventId) {
+                alert('Evento inválido.');
+                return;
+            }
+
+            const selectedSeats = Array.from(document.querySelectorAll('.seat.selected'))
+                .map(s => parseInt(s.dataset.idAsiento, 10))
+                .filter(Boolean);
+            if (selectedSeats.length === 0) {
+                alert('Selecciona al menos un asiento.');
+                return;
+            }
+
+            const completeBtn = document.getElementById('complete-purchase');
+            const originalText = completeBtn.textContent;
+            completeBtn.disabled = true;
+            completeBtn.textContent = 'Procesando...';
+
+            const payload = {
+                id_usuario: id_usuario,
+                id_evento: eventId,
+                asientos: selectedSeats
+            };
+
+            const res = await safeFetch("../controllers/clienteCheckout.php", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.Codigo !== "01") {
+                alert(res.Mensaje || 'Error en la compra');
+                completeBtn.disabled = false;
+                completeBtn.textContent = originalText;
+                return;
+            }
+
+            const ticket = {
+                event: evento?.tipo_evento || '',
+                date: evento?.fecha || '',
+                time: evento?.hora || '',
+                zone: document.getElementById('zone-select').selectedOptions[0]?.textContent || '',
+                row: document.getElementById('row-select').selectedOptions[0]?.textContent || '',
+                seats: selectedSeats,
+                total: res.total || 0,
+                user: currentUser.nombre || currentUser.name || '',
+                paymentMethod: document.querySelector('input[name="paymentMethod"]:checked').value,
+                orderId: res.id_compra ? `TICK-${res.id_compra}` : ('TICK-' + Math.floor(100000 + Math.random() * 900000)),
+                qrData: `EVENT:${evento?.tipo_evento}|DATE:${evento?.fecha}|SEATS:${selectedSeats.join(',')}`
+            };
+            localStorage.setItem('currentTicket', JSON.stringify(ticket));
+            window.location.href = `ticket.html?orderId=${encodeURIComponent(ticket.orderId)}`;
+        } catch (err) {
+            console.error(err);
+            alert('Ocurrió un error al procesar la compra: ' + (err.message || 'desconocido'));
+            const completeBtn = document.getElementById('complete-purchase');
+            if (completeBtn) {
+                completeBtn.disabled = false;
+                completeBtn.textContent = 'Procesar compra';
+            }
+        }
+    }
+});
+</script>
+</body>
+</html>
+
+
+
+
+
+

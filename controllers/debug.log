@@ -1,0 +1,34 @@
+[08-Aug-2025 08:21:06 Europe/Berlin] Métodos SOAP disponibles: Array
+(
+    [0] => string Login(string $user, string $pass)
+    [1] => UNKNOWN TraerEventos(string $categoria)
+    [2] => string TestConexion(string $nombre)
+    [3] => string GetEventosSecure(string $user, string $pass, string $categoria)
+    [4] => string GetZonasSecure(string $user, string $pass, int $id_evento)
+    [5] => string RegistrarUsuario(string $nombre, string $apellido, string $correo, string $pass, string $fecha_nacimiento, string $genero)
+    [6] => string RegistrarUsuarioJson(string $nombre, string $apellido, string $correo, string $pass, string $fecha_nacimiento, string $genero)
+    [7] => string GetTodosEventos()
+    [8] => string GetDetalleEvento(int $id_evento)
+    [9] => string GetFilasZona(int $id_zona)
+    [10] => string GetAsientosFila(int $id_fila)
+    [11] => string ReservarAsientos(string $user, string $pass, UNKNOWN $ids_asientos)
+    [12] => string obtenerEventoConZonasFilasAsientos(UNKNOWN $params)
+    [13] => string RegistrarPago(string $user, string $pass, int $id_compra, float $monto, string $metodo_pago)
+    [14] => string GetHistorialCompras(string $user, string $pass)
+    [15] => string GetPromociones()
+    [16] => string ReservarAsientosPorUsuario(UNKNOWN $params)
+)
+
+[08-Aug-2025 08:21:06 Europe/Berlin] Parámetros enviados al SOAP: Array
+(
+    [usuario] => ucanalexis48@gmail.com
+)
+
+[08-Aug-2025 08:21:06 Europe/Berlin] PHP Warning:  Array to string conversion in C:\xampp\htdocs\boletos\controllers\clienteHistorial.php on line 90
+[08-Aug-2025 08:21:06 Europe/Berlin] Respuesta SOAP cruda: {"Codigo":"00","Mensaje":"Credenciales incorrectas"}
+[08-Aug-2025 08:21:06 Europe/Berlin] Datos procesados: Array
+(
+    [Codigo] => 00
+    [Mensaje] => Credenciales incorrectas
+)
+

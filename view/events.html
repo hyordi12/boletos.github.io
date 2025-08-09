@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>EventTick - Categorías</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <style>
+        .category-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: rgba(13, 110, 253, 0.9);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+        .card-img-top {
+            height: 200px;
+            object-fit: cover;
+        }
+        #user-info {
+            color: white;
+            margin-right: 10px;
+            display: flex;
+            align-items: center;
+            font-weight: 500;
+            text-decoration: none; /* Quitar subrayado */
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="home.html">EventTick</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" >
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item"><a class="nav-link" href="home.html">Inicio</a></li>
+                    <!-- Menú Categorías eliminado -->
+                    <li class="nav-item"><a class="nav-link active" href="events.html">Eventos</a></li>
+                </ul>
+                <div class="d-flex align-items-center">
+                    <a href="profile.html" id="user-info"></a>
+                    <button id="logout-btn" class="btn btn-light">Cerrar Sesión</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <section class="container py-5">
+        <h1 class="text-center mb-5">Categorías Disponibles</h1>
+        <div class="row" id="events-container">
+            <!-- Categorías se cargarán aquí -->
+        </div>
+    </section>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        async function fetchCategorias() {
+            const url = `http://localhost/boletos/controllers/clienteEventos.php?categoria=listar-categorias`;
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
+                const data = await response.json();
+
+                if (data.Codigo !== '01') {
+                    console.error('Error al obtener categorías:', data.Mensaje);
+                    return [];
+                }
+
+                return data.Categorias || [];
+            } catch (error) {
+                console.error('Error al obtener categorías:', error);
+                return [];
+            }
+        }
+
+        function getImageForCategory(categoria) {
+            switch (categoria.toLowerCase()) {
+                case 'música':
+                case 'concierto':
+                    return '../img/musica.jpg';
+                case 'teatro':
+                    return '../img/teatro.jpg';
+                case 'educación':
+                    return '../img/educacion.jpg';
+                case 'deportes':
+                    return '../img/futbol.jpg'; // Aquí asumí que la imagen para "futbil" es "futbol.jpg"
+                default:
+                    return '../img/deporte.jpg';
+            }
+        }
+
+        function renderCategorias(categorias) {
+            const container = document.getElementById('events-container');
+            container.innerHTML = '';
+
+            if (categorias.length === 0) {
+                container.innerHTML = `<div class="col-12 text-center"><h4>No hay categorías disponibles</h4></div>`;
+                return;
+            }
+
+            categorias.forEach(cat => {
+                const imageUrl = getImageForCategory(cat);
+
+                container.innerHTML += `
+                    <div class="col-md-4 mb-4">
+                        <div class="card h-100 position-relative">
+                            <img src="${imageUrl}" class="card-img-top" alt="${cat}">
+                            <span class="category-badge">${cat}</span>
+                            <div class="card-body text-center">
+                                <h5 class="card-title">${cat}</h5>
+                                <a href="event-detail.html?categoria=${encodeURIComponent(cat)}" class="btn btn-primary mt-3">Ver Eventos</a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function mostrarUsuario() {
+            const userInfoLink = document.getElementById('user-info');
+            const userData = localStorage.getItem('currentUser');
+            if (!userData) {
+                userInfoLink.textContent = '';
+                userInfoLink.removeAttribute('href'); // Quitar enlace si no hay usuario
+                return;
+            }
+
+            try {
+                const user = JSON.parse(userData);
+
+                if (user && user.nombre) {
+                    const nombreCompleto = user.apellido ? `${user.nombre} ${user.apellido}` : user.nombre;
+                    userInfoLink.textContent = `Hola, ${nombreCompleto}`;
+                } else if (user && user.correo) {
+                    const nombreFromEmail = user.correo.split('@')[0];
+                    userInfoLink.textContent = `Hola, ${nombreFromEmail}`;
+                } else {
+                    userInfoLink.textContent = 'Hola, Usuario';
+                }
+            } catch (error) {
+                userInfoLink.textContent = 'Hola, Usuario';
+            }
+        }
+
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
+                localStorage.removeItem('currentUser');
+                window.location.href = 'index.html';
+            }
+        });
+
+        window.onload = async () => {
+            mostrarUsuario();
+            const categorias = await fetchCategorias();
+            renderCategorias(categorias);
+        };
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

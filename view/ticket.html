@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ticket - EventTick</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="css/style.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        .ticket-container {
+            max-width: 600px;
+            margin: 50px auto;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        .ticket-header {
+            background-color: #0d6efd;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .ticket-body {
+            padding: 20px;
+        }
+        .qr-code {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .qr-code img {
+            width: 150px;
+            height: 150px;
+        }
+        .payment-method {
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="home.html">EventTick</a>
+            <div class="d-flex">
+                <a href="home.html" class="btn btn-outline-light me-2">Inicio</a>
+                <a href="profile.html" class="btn btn-outline-light">Mi Perfil</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-5">
+        <div class="ticket-container">
+            <div class="ticket-header">
+                <h2>Ticket de Entrada</h2>
+                <p>Orden #<span id="order-number"></span></p>
+            </div>
+            <div class="ticket-body">
+                <div class="ticket-info">
+                    <h3 id="event-title"></h3>
+                    <p><strong>Fecha:</strong> <span id="event-date"></span></p>
+                    <p><strong>Lugar:</strong> <span id="event-location"></span></p>
+                </div>
+
+                <div class="ticket-info">
+                    <h4>Detalles del Boleto</h4>
+                    <p><strong>Zona:</strong> <span id="ticket-zone"></span></p>
+                    <p><strong>Fila:</strong> <span id="ticket-row"></span></p>
+                    <p><strong>Asientos:</strong> <span id="ticket-seats"></span></p>
+                    <p><strong>Precio unitario:</strong> <span id="ticket-price"></span></p>
+                    <p><strong>Total:</strong> <span id="ticket-total"></span></p>
+                    <div class="payment-method">
+                        <p><strong>Método de pago:</strong> <span id="payment-method"></span></p>
+                    </div>
+                </div>
+
+                <div class="qr-code">
+                    <img id="qr-code-img" src="" alt="Código QR" />
+                    <p class="mt-2">Escanea este código para entrar al evento</p>
+                </div>
+
+                <div class="ticket-info">
+                    <h4>Información del Comprador</h4>
+                    <p><strong>Nombre:</strong> <span id="user-name"></span></p>
+                    <p><strong>ID Usuario:</strong> <span id="user-id"></span></p>
+                </div>
+
+                <div class="text-center mt-4">
+                    <button id="download-ticket" class="btn btn-primary">Descargar PDF</button>
+                </div>
+            </div>
+            <div class="ticket-footer" style="background-color: #f8f9fa; padding: 15px; text-align: center; font-size: 12px;">
+                <p>Presentar este ticket al ingresar al evento. No válido para reventa.</p>
+                <p>EventTick © 2023 - Todos los derechos reservados</p>
+            </div>
+        </div>
+    </div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const user = JSON.parse(localStorage.getItem('currentUser'));
+    const ticket = JSON.parse(localStorage.getItem('currentTicket'));
+
+    if (!user || !ticket) {
+      window.location.href = 'index.html';
+      return;
+    }
+
+    // Mostrar datos del ticket, adaptado a las propiedades de ticket:
+    document.getElementById('order-number').textContent = ticket.id_compra || 'N/A';
+    document.getElementById('event-title').textContent = ticket.evento || 'N/A';
+
+    const fechaStr = ticket.fecha || '';
+    const horaStr = ticket.hora || '';
+    document.getElementById('event-date').textContent = `${fechaStr} ${horaStr}`;
+
+    document.getElementById('event-location').textContent = ticket.lugar || 'N/A';
+    document.getElementById('ticket-zone').textContent = ticket.zona || 'N/A';
+    document.getElementById('ticket-row').textContent = ticket.fila || 'N/A';
+
+    // Asientos: si viene como cadena separada o array, adaptamos
+    let asientosDisplay = 'N/A';
+    if (ticket.asientos) {
+      if (Array.isArray(ticket.asientos)) {
+        asientosDisplay = ticket.asientos.join(', ');
+      } else if (typeof ticket.asientos === 'string') {
+        asientosDisplay = ticket.asientos;
+      }
+    }
+    document.getElementById('ticket-seats').textContent = asientosDisplay;
+
+    document.getElementById('ticket-price').textContent = ticket.precio_unitario ? `$${ticket.precio_unitario}` : 'N/A';
+    document.getElementById('ticket-total').textContent = ticket.total ? `$${ticket.total}` : 'N/A';
+
+    // Método de pago
+    let paymentMethodText = ticket.metodo_pago || 'N/A';
+    // Puedes hacer switch para traducir si quieres:
+    if(paymentMethodText.toLowerCase) {
+      switch(paymentMethodText.toLowerCase()) {
+        case 'paypal': paymentMethodText = 'PayPal'; break;
+        case 'transfer': paymentMethodText = 'Transferencia Bancaria'; break;
+        case 'card': paymentMethodText = 'Tarjeta de Crédito/Débito'; break;
+      }
+    }
+    document.getElementById('payment-method').textContent = paymentMethodText;
+
+    // Datos usuario
+    document.getElementById('user-name').textContent = `${user.nombre || ''} ${user.apellido || ''}`.trim();
+    document.getElementById('user-id').textContent = user.id_usuario || 'N/A';
+
+    // Generar QR
+    const qrData = ticket.qrData || `Orden:${ticket.id_compra || ''}`;
+    document.getElementById('qr-code-img').src =
+      `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(qrData)}`;
+
+    // Función para generar PDF
+    function generatePDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+
+      // Agregar logo
+      doc.addImage('https://via.placeholder.com/150x50?text=EventTick', 'JPEG', 80, 10, 50, 20);
+
+      doc.setFontSize(20);
+      doc.text('Ticket de Entrada', 105, 40, { align: 'center' });
+
+      doc.setFontSize(12);
+      doc.text(`Orden #${ticket.id_compra || 'N/A'}`, 105, 50, { align: 'center' });
+
+      doc.setFontSize(14);
+      doc.text(`Evento: ${ticket.evento || 'N/A'}`, 20, 70);
+      doc.text(`Fecha: ${fechaStr} ${horaStr}`, 20, 80);
+      doc.text(`Lugar: ${ticket.lugar || 'N/A'}`, 20, 90);
+      doc.text(`Zona: ${ticket.zona || 'N/A'}`, 20, 100);
+      doc.text(`Fila: ${ticket.fila || 'N/A'}`, 20, 110);
+      doc.text(`Asientos: ${asientosDisplay}`, 20, 120);
+      doc.text(`Precio unitario: ${ticket.precio_unitario ? `$${ticket.precio_unitario}` : 'N/A'}`, 20, 130);
+      doc.text(`Total: ${ticket.total ? `$${ticket.total}` : 'N/A'}`, 20, 140);
+      doc.text(`Método de pago: ${paymentMethodText}`, 20, 150);
+
+      doc.text(`Comprador: ${(user.nombre || '') + ' ' + (user.apellido || '')}`, 20, 160);
+      doc.text(`ID Usuario: ${user.id_usuario || 'N/A'}`, 20, 170);
+
+      // Agregar QR (imagen)
+      const qrImg = document.getElementById('qr-code-img');
+      doc.addImage(qrImg.src, 'PNG', 150, 60, 40, 40);
+
+      doc.save(`Ticket_${ticket.id_compra || 'N/A'}.pdf`);
+    }
+
+    document.getElementById('download-ticket').addEventListener('click', generatePDF);
+  });
+</script>
+</body>
+</html>
+
+

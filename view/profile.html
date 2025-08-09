@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mi Perfil - EventTick</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link rel="stylesheet" href="/boletos/css/style.css"/>
+  <style>
+    .profile-img {
+      width: 150px;
+      height: 150px;
+      object-fit: cover;
+    }
+    .card {
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      border: none;
+    }
+    .navbar {
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .estado-activo {
+      color: #28a745;
+      font-weight: bold;
+    }
+    .estado-cancelado {
+      color: #dc3545;
+      font-weight: bold;
+    }
+    .estado-pendiente {
+      color: #ffc107;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container">
+      <a class="navbar-brand" href="home.html">EventTick</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav me-auto">
+          <li class="nav-item"><a class="nav-link" href="home.html">Inicio</a></li>
+          <li class="nav-item"><a class="nav-link" href="events.html">Eventos</a></li>
+        </ul>
+        <div class="d-flex">
+          <a href="profile.html" class="btn btn-outline-light me-2">Mi Perfil</a>
+          <button id="logout-btn" class="btn btn-light">Cerrar Sesión</button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container py-5">
+    <div class="row">
+      <div class="col-md-4 mb-4">
+        <div class="card text-center">
+          <div class="card-body">
+            <img src="/boletos/img/default-image.jpg" alt="Foto de perfil" class="rounded-circle mb-3 profile-img">
+            <h4 id="user-name">Usuario Demo</h4>
+            <p id="user-email" class="text-muted">demo@eventtick.com</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-8">
+        <div class="card">
+          <div class="card-body">
+            <h4 class="mb-4">Historial de Compras</h4>
+            <div class="table-responsive">
+              <table class="table table-hover">
+                <thead class="table-light">
+                  <tr>
+                    <th>Evento</th>
+                    <th>Fecha y Hora</th>
+                    <th>Lugar</th>
+                    <th>Total</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="tabla-compras">
+                  <tr>
+                    <td colspan="6" class="text-center">Cargando historial...</td>
+                  </tr>
+                </tbody>
+              </table>
+              <div id="mensaje-vacio" class="text-center text-muted mt-3" style="display: none;">
+                No tienes compras registradas.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="bg-dark text-white py-4">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-4">
+          <h5>EventTick</h5>
+          <p>La mejor plataforma para comprar boletos de eventos.</p>
+        </div>
+        <div class="col-md-4">
+          <h5>Enlaces</h5>
+          <ul class="list-unstyled">
+            <li><a href="home.html" class="text-white">Inicio</a></li>
+            <li><a href="events.html" class="text-white">Eventos</a></li>
+          </ul>
+        </div>
+        <div class="col-md-4">
+          <h5>Contacto</h5>
+          <p>info@eventtick.com<br>+1 234 567 890</p>
+        </div>
+      </div>
+      <div class="text-center">
+        <p>&copy; 2023 EventTick. Todos los derechos reservados.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Modal para mostrar detalle de compra -->
+  <div class="modal fade" id="detalleCompraModal" tabindex="-1" aria-labelledby="detalleCompraModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="detalleCompraModalLabel">Detalle de Compra</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body" id="detalleCompraBody">
+          <p>Cargando detalle...</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  let comprasGlobal = [];
+
+  document.addEventListener("DOMContentLoaded", function () {
+    const userData = JSON.parse(localStorage.getItem("currentUser"));
+    if (!userData || !userData.correo) {
+      document.getElementById("tabla-compras").innerHTML = `
+        <tr><td colspan="6" class="text-center text-danger">Error: Usuario no identificado.</td></tr>
+      `;
+      return;
+    }
+
+    document.getElementById("user-name").textContent =
+      `${userData.nombre || ""} ${userData.apellido || ""}`.trim() || "Usuario Demo";
+    document.getElementById("user-email").textContent = userData.correo || "demo@eventtick.com";
+
+    const pass = userData.password || "";
+
+    fetch(
+      `/boletos/controllers/clienteHistorial.php?user=${encodeURIComponent(
+        userData.correo
+      )}&pass=${encodeURIComponent(pass)}`
+    )
+      .then((res) => {
+        if (!res.ok) throw new Error("Error en la red: " + res.status);
+        return res.json();
+      })
+      .then((data) => {
+        comprasGlobal = data.Compras || [];
+
+        const tabla = document.getElementById("tabla-compras");
+        const mensajeVacio = document.getElementById("mensaje-vacio");
+        tabla.innerHTML = "";
+
+        if (
+          data.Codigo !== "01" ||
+          !Array.isArray(data.Compras) ||
+          data.Compras.length === 0
+        ) {
+          mensajeVacio.style.display = "block";
+          return;
+        }
+        mensajeVacio.style.display = "none";
+
+        data.Compras.forEach((compra) => {
+          const fechaTexto = `${compra.fecha} ${compra.hora || "00:00:00"}`;
+
+          const estadoClass = (() => {
+            switch ((compra.estado || "").toLowerCase()) {
+              case "activo":
+              case "completado":
+                return "estado-activo";
+              case "cancelado":
+                return "estado-cancelado";
+              case "pendiente":
+                return "estado-pendiente";
+              default:
+                return "";
+            }
+          })();
+
+          const fila = document.createElement("tr");
+          fila.innerHTML = `
+            <td>${compra.evento}</td>
+            <td>${fechaTexto}</td>
+            <td>${compra.lugar || "N/A"}</td>
+            <td>$${compra.total || "0.00"}</td>
+            <td class="${estadoClass}">${compra.estado || "N/A"}</td>
+            <td><button onclick="verDetalleCompra('${compra.id_compra}')" class="btn btn-sm btn-primary">Detalles</button></td>
+          `;
+          tabla.appendChild(fila);
+        });
+      })
+      .catch((error) => {
+        document.getElementById("tabla-compras").innerHTML = `
+          <tr><td colspan="6" class="text-center text-danger">Error al cargar historial: ${error.message}</td></tr>
+        `;
+      });
+
+    document.getElementById("logout-btn").addEventListener("click", () => {
+      localStorage.removeItem("currentUser");
+      window.location.href = "index.html";
+    });
+  });
+
+  function verDetalleCompra(idCompra) {
+  const modalBody = document.getElementById("detalleCompraBody");
+  modalBody.innerHTML = `<p>Cargando detalle...</p>`;
+  const detalleModal = new bootstrap.Modal(document.getElementById('detalleCompraModal'));
+  detalleModal.show();
+
+  fetch(`/boletos/controllers/clienteDetalleCompra.php?id_compra=${encodeURIComponent(idCompra)}`)
+    .then(res => {
+      if (!res.ok) throw new Error("Error en la red: " + res.status);
+      return res.json();
+    })
+    .then(data => {
+      if (data.Codigo !== "01") {
+        modalBody.innerHTML = `<div class="alert alert-warning">${data.Mensaje || 'No se encontró el detalle.'}</div>`;
+        return;
+      }
+
+      const t = data.Ticket;
+
+      // Aquí forzamos la URL del QR con localhost
+      const qrUrl = `http://localhost/servidorPrueba/qrs/ticket_${idCompra}.png`;
+
+      modalBody.innerHTML = `
+        <h5>Evento: ${t.nombre_evento}</h5>
+        <p><strong>Fecha y Hora:</strong> ${t.fecha_hora}</p>
+        <p><strong>Lugar:</strong> ${t.lugar}</p>
+        <p><strong>Zona:</strong> ${t.zona}</p>
+        <p><strong>Fila:</strong> ${t.fila}</p>
+        <p><strong>Asientos:</strong> ${t.asientos}</p>
+        <p><strong>Precio Unitario:</strong> $${t.precio_unitario}</p>
+        <p><strong>Total:</strong> $${t.total}</p>
+        <p><strong>Comprador:</strong> ${t.comprador}</p>
+        <p><strong>Código Orden:</strong> ${t.codigo_orden}</p>
+        <p><strong>Código QR:</strong></p>
+        <div style="text-align:center;">
+          <img src="${qrUrl}" alt="Código QR del ticket" style="max-width:200px;"/>
+        </div>
+      `;
+    })
+    .catch(error => {
+      modalBody.innerHTML = `<div class="alert alert-danger">Error al cargar detalle: ${error.message}</div>`;
+    });
+}
+
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+

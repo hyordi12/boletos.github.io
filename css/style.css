@@ -8,7 +8,8 @@ body {
 
 /* Hero Section */
 .hero-section {
-    background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('../images/hero-bg.jpg');
+    background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)),
+                url('https://img.freepik.com/vector-premium/dos-boletos-vectoriales-aislados-fondo-blanco-plantilla-tarjeta-boleto-boleto-entrada-al-evento-plantillas-boletos-vectoriales-concierto-cine-teatro-fiesta-festival_735449-57.jpg?size=626&ext=jpg');
     background-size: cover;
     background-position: center;
     color: white;
