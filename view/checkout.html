@@ -246,6 +246,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             imgEl.src = '../img/teatro.jpg';
         } else if (eventoObj.categoria?.toLowerCase() === 'concierto' || eventoObj.tipo_evento?.toLowerCase().includes('concierto')) {
             imgEl.src = '../img/musica.jpg';
+        } else if (eventoObj.categoria?.toLowerCase() === 'educación' || eventoObj.tipo_evento?.toLowerCase().includes('educación')) {
+            imgEl.src = '../img/tecnologico.jpg';
+        } else if (eventoObj.categoria?.toLowerCase() === 'deporte' || eventoObj.tipo_evento?.toLowerCase().includes('deporte')) {
+            imgEl.src = '../img/fut.jpg';
         } else {
             imgEl.src = '../img/default.jpg';
         }
@@ -436,77 +440,145 @@ document.addEventListener('DOMContentLoaded', async function() {
     document.getElementById('complete-purchase').addEventListener('click', comprarBoletos);
 
     async function comprarBoletos() {
-        try {
-            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-            if (!currentUser) {
-                alert('Debes iniciar sesión primero.');
-                window.location.href = 'index.html';
-                return;
-            }
-            const id_usuario = currentUser.id_usuario || 1;
-            const eventId = parseInt(new URLSearchParams(window.location.search).get('eventId'), 10);
-            if (!eventId) {
-                alert('Evento inválido.');
-                return;
-            }
+    try {
+        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+        if (!currentUser) {
+            alert('Debes iniciar sesión primero.');
+            window.location.href = 'index.html';
+            return;
+        }
 
-            const selectedSeats = Array.from(document.querySelectorAll('.seat.selected'))
-                .map(s => parseInt(s.dataset.idAsiento, 10))
-                .filter(Boolean);
-            if (selectedSeats.length === 0) {
-                alert('Selecciona al menos un asiento.');
-                return;
-            }
+        const eventId = parseInt(new URLSearchParams(window.location.search).get('eventId'), 10);
+        if (!eventId) {
+            alert('Evento inválido.');
+            return;
+        }
 
-            const completeBtn = document.getElementById('complete-purchase');
-            const originalText = completeBtn.textContent;
-            completeBtn.disabled = true;
-            completeBtn.textContent = 'Procesando...';
+        const selectedSeats = Array.from(document.querySelectorAll('.seat.selected'))
+            .map(s => parseInt(s.dataset.idAsiento, 10))
+            .filter(Boolean);
+        
+        if (selectedSeats.length === 0) {
+            alert('Selecciona al menos un asiento.');
+            return;
+        }
 
-            const payload = {
-                id_usuario: id_usuario,
-                id_evento: eventId,
-                asientos: selectedSeats
-            };
+        const completeBtn = document.getElementById('complete-purchase');
+        const originalText = completeBtn.textContent;
+        completeBtn.disabled = true;
+        completeBtn.textContent = 'Procesando...';
 
-            const res = await safeFetch("../controllers/clienteCheckout.php", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-            });
+        // Obtener más detalles de los asientos seleccionados
+        const selectedSeatNumbers = Array.from(document.querySelectorAll('.seat.selected'))
+            .map(seat => seat.title.replace('Asiento ', ''));
+        
+        const zonaSeleccionada = zonas.find(z => z.id_zona == document.getElementById('zone-select').value);
+        const filaSeleccionada = zonaSeleccionada.filas.find(f => f.id_fila == document.getElementById('row-select').value);
 
-            if (res.Codigo !== "01") {
-                alert(res.Mensaje || 'Error en la compra');
-                completeBtn.disabled = false;
-                completeBtn.textContent = originalText;
-                return;
-            }
+        const payload = {
+            id_usuario: currentUser.id_usuario,
+            id_evento: eventId,
+            asientos: selectedSeats
+        };
 
-            const ticket = {
-                event: evento?.tipo_evento || '',
-                date: evento?.fecha || '',
-                time: evento?.hora || '',
-                zone: document.getElementById('zone-select').selectedOptions[0]?.textContent || '',
-                row: document.getElementById('row-select').selectedOptions[0]?.textContent || '',
-                seats: selectedSeats,
-                total: res.total || 0,
-                user: currentUser.nombre || currentUser.name || '',
-                paymentMethod: document.querySelector('input[name="paymentMethod"]:checked').value,
-                orderId: res.id_compra ? `TICK-${res.id_compra}` : ('TICK-' + Math.floor(100000 + Math.random() * 900000)),
-                qrData: `EVENT:${evento?.tipo_evento}|DATE:${evento?.fecha}|SEATS:${selectedSeats.join(',')}`
-            };
-            localStorage.setItem('currentTicket', JSON.stringify(ticket));
-            window.location.href = `ticket.html?orderId=${encodeURIComponent(ticket.orderId)}`;
-        } catch (err) {
-            console.error(err);
-            alert('Ocurrió un error al procesar la compra: ' + (err.message || 'desconocido'));
-            const completeBtn = document.getElementById('complete-purchase');
-            if (completeBtn) {
-                completeBtn.disabled = false;
-                completeBtn.textContent = 'Procesar compra';
-            }
+        const res = await safeFetch("../controllers/clienteCheckout.php", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+
+        if (res.Codigo !== "01") {
+            alert(res.Mensaje || 'Error en la compra');
+            completeBtn.disabled = false;
+            completeBtn.textContent = originalText;
+            return;
+        }
+
+        // Crear objeto ticket con todos los datos necesarios
+        const ticket = {
+            event: {
+                id: eventId,
+                name: evento.tipo_evento,
+                date: evento.fecha,
+                time: evento.hora,
+                location: evento.lugar,
+                image: document.getElementById('event-image').src
+            },
+            zone: {
+                id: zonaSeleccionada.id_zona,
+                name: zonaSeleccionada.nombre_zona,
+                price: zonaSeleccionada.precio
+            },
+            row: {
+                id: filaSeleccionada.id_fila,
+                name: filaSeleccionada.nombre_fila
+            },
+            seats: {
+                ids: selectedSeats,
+                numbers: selectedSeatNumbers
+            },
+            user: {
+                id: currentUser.id_usuario,
+                name: currentUser.nombre || currentUser.name
+            },
+            payment: {
+                method: document.querySelector('input[name="paymentMethod"]:checked').value,
+                details: getPaymentDetails()
+            },
+            order: {
+                id: res.id_compra ? `TICK-${res.id_compra}` : `TICK-${Math.floor(100000 + Math.random() * 900000)}`,
+                date: new Date().toISOString(),
+                total: res.total || calculateTotal()
+            },
+            qrData: generateQRData()
+        };
+
+        // Guardar en localStorage y redirigir
+        localStorage.setItem('currentTicket', JSON.stringify(ticket));
+        window.location.href = `ticket.html?orderId=${encodeURIComponent(ticket.order.id)}`;
+        
+    } catch (err) {
+        console.error(err);
+        alert('Ocurrió un error al procesar la compra: ' + (err.message || 'desconocido'));
+        const completeBtn = document.getElementById('complete-purchase');
+        if (completeBtn) {
+            completeBtn.disabled = false;
+            completeBtn.textContent = 'Procesar compra';
         }
     }
+}
+
+// Funciones auxiliares
+function getPaymentDetails() {
+    const method = document.querySelector('input[name="paymentMethod"]:checked').value;
+    if (method === 'card') {
+        return {
+            cardNumber: document.getElementById('cardNumber').value,
+            cardName: document.getElementById('cardName').value
+        };
+    } else if (method === 'transfer') {
+        return {
+            bank: 'EventTick Bank',
+            account: 'ES12 3456 7890 1234 5678 9012'
+        };
+    }
+    return {};
+}
+
+function calculateTotal() {
+    const selectedSeats = document.querySelectorAll('.seat.selected').length;
+    const zoneSelect = document.getElementById('zone-select');
+    const selectedZone = zonas.find(z => z.id_zona == zoneSelect.value);
+    return selectedSeats * parseFloat(selectedZone.precio);
+}
+
+function generateQRData() {
+    const event = evento;
+    const selectedSeats = Array.from(document.querySelectorAll('.seat.selected'))
+        .map(s => s.title.replace('Asiento ', ''));
+    
+    return `EVENT:${event.tipo_evento}|DATE:${event.fecha}|TIME:${event.hora}|SEATS:${selectedSeats.join(',')}`;
+}
 });
 </script>
 </body>

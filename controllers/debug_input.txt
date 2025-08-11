@@ -1,1 +1,0 @@
-user=juan.perez%40example.com&pass=1234pass
