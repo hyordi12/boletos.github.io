@@ -21,7 +21,7 @@ if (empty($user) || empty($pass)) {
 }
 
 try {
-    $client = new SoapClient("http://localhost/servidorPrueba/ServicioWebEventTick.php?wsdl");
+    $client = new SoapClient("https://e31c8a1ef2e2.ngrok-free.app/servidorPrueba/ServicioWebEventTick.php?wsdl");
     $respuesta = $client->__soapCall("GetHistorialCompras", [$user, $pass]);
 
     $data = json_decode($respuesta, true);

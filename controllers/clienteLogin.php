@@ -11,7 +11,7 @@ $user = $_POST['user'] ?? '';
 $pass = $_POST['pass'] ?? '';
 
 try {
-    $client = new SoapClient("http://localhost/servidorPrueba/ServicioWebEventTick.php?wsdl");
+    $client = new SoapClient("https://e31c8a1ef2e2.ngrok-free.app/servidorPrueba/ServicioWebEventTick.php?wsdl");
 
     // Llamada correcta al método
     $respuesta = $client->__soapCall("Login", [$user, $pass]);
@@ -21,7 +21,7 @@ try {
   if ($partes[0] === 'Succes') {
     echo json_encode([
         'Codigo' => '01',
-        'Mensaje' => $partes[1],           // Bienvenido, Juan
+        'Mensaje' => $partes[1],           // Bienvenido
         'id' => intval($partes[2] ?? 0),   // ID del usuario
         'nombre' => $partes[3] ?? '',      // Nombre
         'apellido' => $partes[4] ?? '',    // Apellido

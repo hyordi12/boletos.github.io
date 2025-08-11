@@ -1,5 +1,4 @@
 <?php
-// clienteEventos.php
 
 // Permitir peticiones desde cualquier origen (ajusta para producción)
 header("Access-Control-Allow-Origin: *");
@@ -16,8 +15,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 $categoria = $_GET['categoria'] ?? 'all';
 
 try {
-    // Ruta correcta a tu servicio SOAP WSDL
-    $wsdl = "http://localhost/servidorPrueba/ServicioWebEventTick.php?wsdl";
+    // Ruta SOAP WSDL
+    $wsdl = "https://e31c8a1ef2e2.ngrok-free.app/servidorPrueba/ServicioWebEventTick.php?wsdl";
 
     $client = new SoapClient($wsdl);
 

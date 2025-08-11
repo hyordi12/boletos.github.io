@@ -20,8 +20,8 @@ if (empty($id_compra) || !is_numeric($id_compra)) {
 }
 
 try {
-    // Crear cliente SOAP apuntando a tu servicio web real que tiene ObtenerTicketCompra
-    $client = new SoapClient("http://localhost/servidorPrueba/ServicioWebEventTick.php?wsdl");
+    // Crear cliente SOAP 
+    $client = new SoapClient("https://e31c8a1ef2e2.ngrok-free.app/servidorPrueba/ServicioWebEventTick.php?wsdl");
 
     // Llamar método SOAP pasando id_compra convertido a entero
     $respuesta = $client->__soapCall("ObtenerTicketCompra", [(int)$id_compra]);
@@ -38,8 +38,7 @@ try {
         exit;
     }
 
-    // Opcional: convertir fecha_hora a ISO 8601 si necesitas (en tu caso viene formateada, puedes agregar o no)
-    // Aquí no es obligatorio porque ya tienes la fecha formateada.
+
 
     echo json_encode($data, JSON_UNESCAPED_UNICODE);
 

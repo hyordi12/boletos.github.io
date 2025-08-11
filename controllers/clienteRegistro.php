@@ -33,7 +33,7 @@ try {
     $fecha_nacimiento = $anio_nacimiento . "-01-01";
 
     // URL del servicio SOAP
-    $wsdl = "http://localhost/servidorPrueba/ServicioWebEventTick.php?wsdl";
+    $wsdl = "https://e31c8a1ef2e2.ngrok-free.app/servidorPrueba/ServicioWebEventTick.php?wsdl";
     $client = new SoapClient($wsdl, [
         "trace" => 1,
         "exceptions" => true
@@ -57,7 +57,7 @@ try {
         echo json_encode([
             "Codigo" => "01",
             "Mensaje" => $respuesta['message'],
-            "id" => $respuesta['id_usuario'] ?? null  // ← Asegúrate que el backend SOAP devuelve esto
+            "id" => $respuesta['id_usuario'] ?? null  
         ]);
     } else {
         echo json_encode([

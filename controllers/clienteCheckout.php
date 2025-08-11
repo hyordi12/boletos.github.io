@@ -20,8 +20,8 @@ function salidaError($codigo, $mensaje, $extra = []) {
     exit;
 }
 
-// URL del WSDL - ajusta según donde esté realmente disponible
-$wsdlUrl = "http://localhost/servidorPrueba/ServicioWebEventTick.php?wsdl";
+// URL del WSDL
+$wsdlUrl = "https://e31c8a1ef2e2.ngrok-free.app/servidorPrueba/ServicioWebEventTick.php?wsdl";
 
 // Instancia SOAP
 try {

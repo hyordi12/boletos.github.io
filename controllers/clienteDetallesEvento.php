@@ -16,7 +16,7 @@ if (!$id_evento) {
 
 try {
     // Crear cliente SOAP
-    $client = new SoapClient("http://localhost/servidorPrueba/ServicioWebEventTick.php?wsdl");
+    $client = new SoapClient("https://e31c8a1ef2e2.ngrok-free.app/servidorPrueba/ServicioWebEventTick.php?wsdl");
 
     // Llamar al método del servicio web
     $result = $client->GetDetalleEvento($id_evento); // Ya regresa un JSON como string
